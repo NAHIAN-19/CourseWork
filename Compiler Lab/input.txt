@@ -1,0 +1,10 @@
+#include<bits/stdc++.h>
+using namespace std;
+int main(){
+    int t;
+    cin>>t; /*This is a comment
+    hello world end*/
+    string str = "//This is a string",st; //comment
+    cout<<str<<endl;
+    return 0;
+}
