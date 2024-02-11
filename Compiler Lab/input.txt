@@ -1,3 +1,4 @@
+/// LAB - 01
 #include<bits/stdc++.h>
 using namespace std;
 int main(){
@@ -6,5 +7,15 @@ int main(){
     hello world end*/
     string str = "//This is a string",st; //comment
     cout<<str<<endl;
+    return 0;
+}
+/// LAB - 02
+#include <iostream>
+using namespace std;
+void main (int a, int b) {
+    int num1 = 5;
+    int num2 = 7;
+    int result = num1 + num2;
+    cout << "The sum is: " << result << endl;
     return 0;
 }
