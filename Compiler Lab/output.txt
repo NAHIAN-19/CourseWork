@@ -1,0 +1,21 @@
+
+#include<bits/stdc++.h>
+using namespace std;
+int main(){
+    int t;
+    cin>>t; 
+    string str = "//This is a string",st; 
+    cout<<str<<endl;
+    return 0;
+}
+
+///  - 02
+#include <iostream>
+using namespace ;
+void  (int , int ) {
+int  = 5;
+int  = 7;
+int  =  + ;
+ << "The  is: " <<  << ;
+return 0;
+}

@@ -1,4 +1,4 @@
-//                                                     _NAHIAN_                             
+//                                              _NAHIAN_              
 #include <bits/stdc++.h>
 //use This -> #MARK: <- to partition code in mini map
 #define rep(i, a, b) for (ll i = (a); i < (b); ++i)
