@@ -1,4 +1,6 @@
-//                                              _NAHIAN_              
+/* 
+    _NAHIAN_
+*/
 #include <bits/stdc++.h>
 //use This -> #MARK: <- to partition code in mini map
 #define rep(i, a, b) for (ll i = (a); i < (b); ++i)
@@ -134,11 +136,13 @@ advance(pos,next index/pre index);//advance(it,2);,advance(it,-2);
 insert(pos,num_to_insert,value);//insert(it,2,100);
 */
 
-
-int main() {
-ll _; cin>>_;
-while(_--){
+void n4h14n(){
     ll n; cin>>n;
 }
+int main() {
+    ll _; cin>>_;
+    while(_--){
+        n4h14n();
+    }
     return 0;
 }
