@@ -1,0 +1,438 @@
+Name: Dynamic Partitioning Memory Manager
+
+Objective:  
+The Dynamic Partitioning Memory Manager is designed to efficiently allocate and deallocate memory blocks using various algorithms (First Fit, Best Fit, Worst Fit). It provides both a command-line interface and a graphical user interface for user interaction.
+
+Overview/How it works:  
+The memory manager maintains a list of memory blocks, each with properties such as size, allocation status, and a unique identifier. Users can allocate or deallocate memory blocks through the CLI or GUI. The manager supports different allocation strategies, allowing users to choose the most suitable method for their needs. The memory state is visually represented in the GUI, providing an intuitive understanding of memory usage.
+
+Code:
+
+```python
+# cli.py
+import os
+from random import choice
+import time
+from memory_manager import MemoryManager
+
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def print_memory_state(memory_state):
+    # Calculate dynamic widths based on content
+    start_width = max(len(str(block.start)) for block in memory_state)
+    size_width = max(len(str(block.size)) for block in memory_state)
+    status_width = max(len("Allocated (ID: " + str(block.id) + ")") if block.is_allocated else len("Free") for block in memory_state)
+    
+    # Ensure minimum widths
+    start_width = max(start_width, 5)  # "Start"
+    size_width = max(size_width, 4)    # "Size"
+    status_width = max(status_width, 6) # "Status"
+    
+    # Calculate total width for the box
+    total_width = start_width + size_width + status_width + 10  # 10 for padding and separators
+    # Check if memory is full, then print Full beside the memory state
+    # Print header
+    if all(block.is_allocated for block in memory_state):
+        print("\nMemory State (Full):")
+    else:
+        print("\nMemory State:")
+    print("┌" + "─" * total_width + "┐")
+    
+    # Print column headers
+    header = f"│ {'Start':^{start_width}} │ {'Size':^{size_width}} │ {'Status':^{status_width}}   │"
+    print(header)
+    print("├" + "─" * (start_width + 2) + "┼" + "─" * (size_width + 2) + "┼" + "─" * (status_width + 4) + "┤")
+
+    # Print memory blocks
+    for block in memory_state:
+        status = f"Allocated (ID: {block.id})" if block.is_allocated else "Free"
+        row = f"│ {block.start:>{start_width}} │ {block.size:>{size_width}} │ {status:<{status_width}}   │"
+        print(row)
+
+    # Print footer
+    print("└" + "─" * total_width + "┘")
+
+def print_menu(memory_manager):
+    menu_width = 50
+    print("\n" + "═" * menu_width)
+    print(f"{'Memory Manager - Main Menu':^{menu_width}}")
+    print(f"{'Current Algorithm: ' + memory_manager.algorithm.replace('_', ' ').title():^{menu_width}}")
+    print("═" * menu_width)
+    print(f"{'1. Allocate Memory':^{menu_width}}")
+    print(f"{'2. Deallocate Memory':^{menu_width}}")
+    print(f"{'3. View Memory State':^{menu_width}}")
+    print(f"{'4. Change Algorithm':^{menu_width}}")
+    print(f"{'5. Exit':^{menu_width}}")
+    print("═" * menu_width)
+
+def get_input(prompt, input_type=int):
+    while True:
+        try:
+            user_input = input(f"\n{prompt}")
+            if user_input.lower() == 'q':
+                return None
+            return input_type(user_input)
+        except ValueError:
+            print(f"\nInvalid input. Please enter a valid {input_type.__name__} (or 'q' to cancel)")
+
+def change_algorithm(memory_manager):
+    print("\nSelect a memory allocation algorithm:")
+    print("1. First Fit")
+    print("2. Best Fit")
+    print("3. Worst Fit")
+    choice = get_input("Enter your choice (1-3): ")
+    algorithms = {1: "first_fit", 2: "best_fit", 3: "worst_fit"}
+    memory_manager.algorithm = algorithms.get(choice, "first_fit")
+
+def print_status(message, success=True):
+    color = '\033[92m' if success else '\033[91m'  # Green for success, Red for failure
+    end_color = '\033[0m'
+    print(f"\n{color}{message}{end_color}")
+
+def run_cli():
+    clear_screen()
+    print("\n" + "═" * 60)
+    print("Welcome to the Dynamic Partitioning Memory Manager".center(60))
+    print("═" * 60)
+    
+    total_memory = get_input("Enter total memory size: ")
+    if total_memory is None or total_memory <= 0:
+        print_status("Invalid memory size. Exiting...", False)
+        return
+    
+    manager = MemoryManager(total_memory)
+    
+    while True:
+        clear_screen()
+        print_menu(manager)
+        choice = get_input("Enter your choice (1-4): ")
+        
+        if choice is None:
+            continue
+
+        if choice == 1:
+            size = get_input("Enter size to allocate: ")
+            if size is not None:
+                result = manager.allocate(size)
+                if result is not None:
+                    print_status(f"Memory allocated with ID: {result}")
+                else:
+                    print_status("Allocation failed: Not enough memory", False)
+                print_memory_state(manager.get_memory_state())
+            input("\nPress Enter to continue...")
+
+        elif choice == 2:
+            id = get_input("Enter ID to deallocate: ")
+            if id is not None:
+                if manager.deallocate(id):
+                    print_status("Memory deallocated successfully")
+                else:
+                    print_status("Deallocation failed: Invalid ID", False)
+                print_memory_state(manager.get_memory_state())
+            input("\nPress Enter to continue...")
+
+        elif choice == 3:
+            clear_screen()
+            print_memory_state(manager.get_memory_state())
+            input("\nPress Enter to return to the main menu...")
+
+        elif choice == 4:
+            clear_screen()
+            change_algorithm(manager)
+            clear_screen()
+            print_status("Algorithm changed to " + manager.algorithm.replace("_", " ").title())
+            input("\nPress Enter to continue...")
+        
+        elif choice == 5:
+            clear_screen()
+            print("\n" + "═" * 60)
+            print("Thank you for using the Memory Manager. Goodbye!".center(60))
+            print("═" * 60)
+            time.sleep(2)
+            clear_screen()
+            break
+
+        else:
+            print_status("Invalid choice. Please try again.", False)
+            time.sleep(1)
+
+if __name__ == "__main__":
+    run_cli()
+```
+
+```python
+# memory_manager.py
+import random
+
+class MemoryBlock:
+    """Represents a block of memory with properties like size, allocation status, and visual attributes"""
+    def __init__(self, start, size, is_allocated=False):
+        self.start = start          # Starting position of the memory block
+        self.size = size            # Size of the memory block
+        self.is_allocated = False   # Allocation status flag
+        self.id = None             # Unique identifier for allocated blocks
+        self.color = None          # Color for visualization purposes
+
+class MemoryManager:
+    """Manages memory allocation and deallocation using a first-fit strategy"""
+    def __init__(self, total_memory, algorithm='first_fit'):
+        self.total_memory = total_memory  # Total available memory size
+        # Initialize with one free block spanning total memory
+        self.memory = [MemoryBlock(0, total_memory)]
+        self.next_id = 1  # Counter for generating unique block IDs
+        self.algorithm = algorithm  # Memory allocation algorithm
+        # Color palette for visualizing different memory blocks
+        self.colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', 
+                        '#F06292', '#AED581', '#7986CB', '#9575CD', '#4DD0E1']
+
+    def allocate(self, size):
+        if self.algorithm == 'first_fit':
+            return self._first_fit(size)
+        elif self.algorithm == 'best_fit':
+            return self._best_fit(size)
+        elif self.algorithm == 'worst_fit':
+            return self._worst_fit(size)
+
+    def _first_fit(self, size):
+        for block in self.memory:
+            if not block.is_allocated and block.size >= size:
+                return self._allocate_block(block, size)
+        return None
+
+    def _best_fit(self, size):
+        best_block = None
+        smallest_difference = float('inf')
+        
+        for block in self.memory:
+            if not block.is_allocated and block.size >= size:
+                difference = block.size - size
+                if difference < smallest_difference:
+                    smallest_difference = difference
+                    best_block = block
+                    
+        return self._allocate_block(best_block, size) if best_block else None
+
+    def _worst_fit(self, size):
+        worst_block = None
+        largest_difference = -1
+        
+        for block in self.memory:
+            if not block.is_allocated and block.size >= size:
+                difference = block.size - size
+                if difference > largest_difference:
+                    largest_difference = difference
+                    worst_block = block
+                    
+        return self._allocate_block(worst_block, size) if worst_block else None
+
+    def _allocate_block(self, block, size):
+        if block.size > size:
+            new_block = MemoryBlock(block.start + size, block.size - size)
+            self.memory.insert(self.memory.index(block) + 1, new_block)
+            block.size = size
+        block.is_allocated = True
+        block.id = self.next_id
+        block.color = random.choice(self.colors)
+        self.next_id += 1
+        return block.id
+
+    def deallocate(self, id):
+        """
+        Deallocates a memory block by ID and merges adjacent free blocks
+        Returns: True if successful, False if block not found
+        """
+        for i, block in enumerate(self.memory):
+            if block.id == id and block.is_allocated:
+                # Reset block properties
+                block.is_allocated = False
+                block.id = None
+                block.color = None
+                # Combine with neighboring free blocks
+                self._merge_adjacent_blocks(i)
+                return True
+        return False
+
+    def _merge_adjacent_blocks(self, index):
+        """
+        Helper method to merge adjacent free memory blocks
+        Merges both forward and backward from the given index
+        """
+        # Merge with next blocks if they're free
+        while index < len(self.memory) - 1 and not self.memory[index + 1].is_allocated:
+            self.memory[index].size += self.memory[index + 1].size
+            self.memory.pop(index + 1)
+        # Merge with previous blocks if they're free
+        while index > 0 and not self.memory[index - 1].is_allocated:
+            self.memory[index - 1].size += self.memory[index].size
+            self.memory.pop(index)
+            index -= 1
+
+    def get_memory_state(self):
+        """Returns the current state of memory blocks"""
+        return self.memory
+```
+
+```python
+# main.py
+import sys
+from cli import run_cli
+from gui import run_gui
+
+def main():
+    print("Welcome to the Dynamic Partitioning Memory Manager")
+    print("1. Command Line Interface")
+    print("2. Graphical User Interface")
+    
+    choice = input("Enter your choice (1 or 2): ")
+    
+    if choice == '1':
+        run_cli()
+    elif choice == '2':
+        run_gui()
+    else:
+        print("Invalid choice. Exiting...")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+```
+
+```python
+# gui.py
+import tkinter as tk
+from tkinter import messagebox
+from memory_manager import MemoryManager
+
+class MemoryManagerGUI:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Enhanced Memory Manager")
+        self.master.geometry("800x600")
+        self.manager = None
+
+        self.canvas = tk.Canvas(master, width=780, height=400, bg='white')
+        self.canvas.pack(pady=20)
+
+        self.input_frame = tk.Frame(master)
+        self.input_frame.pack(pady=10)
+
+        self.size_label = tk.Label(self.input_frame, text="Size:")
+        self.size_label.grid(row=0, column=0, padx=5)
+        self.size_entry = tk.Entry(self.input_frame, width=10)
+        self.size_entry.grid(row=0, column=1, padx=5)
+
+        self.allocate_button = tk.Button(self.input_frame, text="Allocate", command=self.allocate_memory, state=tk.DISABLED)
+        self.allocate_button.grid(row=0, column=2, padx=5)
+
+        self.id_label = tk.Label(self.input_frame, text="ID:")
+        self.id_label.grid(row=0, column=3, padx=5)
+        self.id_entry = tk.Entry(self.input_frame, width=10)
+        self.id_entry.grid(row=0, column=4, padx=5)
+
+        self.deallocate_button = tk.Button(self.input_frame, text="Deallocate", command=self.deallocate_memory, state=tk.DISABLED)
+        self.deallocate_button.grid(row=0, column=5, padx=5)
+
+        self.init_frame = tk.Frame(master)
+        self.init_frame.pack(pady=10)
+
+        self.init_label = tk.Label(self.init_frame, text="Total Memory Size:")
+        self.init_label.grid(row=0, column=0, padx=5)
+        self.init_entry = tk.Entry(self.init_frame, width=10)
+        self.init_entry.grid(row=0, column=1, padx=5)
+
+        self.init_button = tk.Button(self.init_frame, text="Initialize Memory", command=self.initialize_memory)
+        self.init_button.grid(row=0, column=2, padx=5)
+
+        self.status_label = tk.Label(master, text="", fg="green")
+        self.status_label.pack(pady=10)
+
+        self.algo_frame = tk.Frame(master)
+        self.algo_frame.pack(pady=10)
+        
+        self.algo_label = tk.Label(self.algo_frame, text="Algorithm:")
+        self.algo_label.grid(row=0, column=0, padx=5)
+        
+        self.algo_var = tk.StringVar(value="first_fit")
+        algorithms = [("First Fit", "first_fit"), ("Best Fit", "best_fit"), ("Worst Fit", "worst_fit")]
+        
+        for i, (text, value) in enumerate(algorithms):
+            rb = tk.Radiobutton(self.algo_frame, text=text, variable=self.algo_var, value=value, command=self.update_algorithm)
+            rb.grid(row=0, column=i+1, padx=5)
+            
+    def update_algorithm(self):
+        if self.manager:
+            self.manager.algorithm = self.algo_var.get()
+            self.status_label.config(text=f"Algorithm changed to {self.algo_var.get()} fit", fg="green")
+            
+    def initialize_memory(self):
+        try:
+            size = int(self.init_entry.get())
+            if size <= 0:
+                raise ValueError("Size must be positive")
+            self.manager = MemoryManager(size,self.algo_var.get())
+            self.allocate_button['state'] = tk.NORMAL
+            self.deallocate_button['state'] = tk.NORMAL
+            self.init_frame.pack_forget()  # Remove initialization frame
+            self.draw_memory()
+            self.status_label.config(text="Memory initialized successfully", fg="green")
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+
+    def allocate_memory(self):
+        try:
+            size = int(self.size_entry.get())
+            if size <= 0:
+                raise ValueError("Size must be positive")
+            result = self.manager.allocate(size)
+            if result is not None:
+                self.status_label.config(text=f"Memory allocated with ID: {result}", fg="green")
+            else:
+                self.status_label.config(text="Allocation failed: Not enough memory", fg="red")
+            self.draw_memory()
+            self.size_entry.delete(0, tk.END)  # Reset the size entry field
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+
+    def deallocate_memory(self):
+        try:
+            id = int(self.id_entry.get())
+            if self.manager.deallocate(id):
+                self.status_label.config(text="Memory deallocated successfully", fg="green")
+            else:
+                self.status_label.config(text="Deallocation failed: Invalid ID", fg="red")
+            self.draw_memory()
+            self.id_entry.delete(0, tk.END)  # Reset the ID entry field
+        except ValueError:
+            messagebox.showerror("Error", "Invalid ID")
+
+    def draw_memory(self):
+        self.canvas.delete("all")
+        memory_state = self.manager.get_memory_state()
+        total_memory = self.manager.total_memory
+        block_height = 100
+        y = 150
+
+        for block in memory_state:
+            x1 = (block.start / total_memory) * 780
+            x2 = ((block.start + block.size) / total_memory) * 780
+            color = block.color if block.is_allocated else "lightgrey"
+            self.canvas.create_rectangle(x1, y, x2, y + block_height, fill=color, outline="black")
+            if block.is_allocated:
+                self.canvas.create_text((x1 + x2) / 2, y + block_height / 2, text=f"ID: {block.id}\nSize: {block.size}")
+            else:
+                self.canvas.create_text((x1 + x2) / 2, y + block_height / 2, text=f"Free\n{block.size}")
+
+        self.canvas.create_text(390, 50, text=f"Total Memory: {total_memory}", font=("Arial", 14, "bold"))
+
+def run_gui():
+    root = tk.Tk()
+    MemoryManagerGUI(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    run_gui()
+```
+
+**Discussion/Summary:**  
+The Dynamic Partitioning Memory Manager provides a robust solution for managing memory allocation and deallocation. It supports multiple allocation strategies, allowing users to choose the most efficient method for their specific needs. The CLI offers a straightforward interface for quick interactions, while the GUI enhances user experience with visual representations of memory usage. This dual approach ensures that the memory manager is accessible to a wide range of users, from those preferring command-line tools to those who favor graphical interfaces.

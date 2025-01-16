@@ -1,6 +1,8 @@
 import os
+from random import choice
 import time
 from memory_manager import MemoryManager
+import memory_manager
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -18,9 +20,12 @@ def print_memory_state(memory_state):
     
     # Calculate total width for the box
     total_width = start_width + size_width + status_width + 10  # 10 for padding and separators
-
+    # Check if memory is full, then print Full beside the memory state
     # Print header
-    print("\nMemory State:")
+    if all(block.is_allocated for block in memory_state):
+        print("\nMemory State (Full):")
+    else:
+        print("\nMemory State:")
     print("┌" + "─" * total_width + "┐")
     
     # Print column headers
@@ -37,15 +42,17 @@ def print_memory_state(memory_state):
     # Print footer
     print("└" + "─" * total_width + "┘")
 
-def print_menu():
+def print_menu(memory_manager):
     menu_width = 50
     print("\n" + "═" * menu_width)
     print(f"{'Memory Manager - Main Menu':^{menu_width}}")
+    print(f"{'Current Algorithm: ' + memory_manager.algorithm.replace("_", " ").title():^{menu_width}}")
     print("═" * menu_width)
     print(f"{'1. Allocate Memory':^{menu_width}}")
     print(f"{'2. Deallocate Memory':^{menu_width}}")
     print(f"{'3. View Memory State':^{menu_width}}")
-    print(f"{'4. Exit':^{menu_width}}")
+    print(f"{'4. Change Algorithm':^{menu_width}}")
+    print(f"{'5. Exit':^{menu_width}}")
     print("═" * menu_width)
 
 def get_input(prompt, input_type=int):
@@ -57,6 +64,15 @@ def get_input(prompt, input_type=int):
             return input_type(user_input)
         except ValueError:
             print(f"\nInvalid input. Please enter a valid {input_type.__name__} (or 'q' to cancel)")
+
+def change_algorithm(memory_manager):
+    print("\nSelect a memory allocation algorithm:")
+    print("1. First Fit")
+    print("2. Best Fit")
+    print("3. Worst Fit")
+    choice = get_input("Enter your choice (1-3): ")
+    algorithms = {1: "first_fit", 2: "best_fit", 3: "worst_fit"}
+    memory_manager.algorithm = algorithms.get(choice, "first_fit")
 
 def print_status(message, success=True):
     color = '\033[92m' if success else '\033[91m'  # Green for success, Red for failure
@@ -78,7 +94,7 @@ def run_cli():
     
     while True:
         clear_screen()
-        print_menu()
+        print_menu(manager)
         choice = get_input("Enter your choice (1-4): ")
         
         if choice is None:
@@ -111,6 +127,13 @@ def run_cli():
             input("\nPress Enter to return to the main menu...")
 
         elif choice == 4:
+            clear_screen()
+            change_algorithm(manager)
+            clear_screen()
+            print_status("Algorithm changed to " + manager.algorithm.replace("_", " ").title())
+            input("\nPress Enter to continue...")
+        
+        elif choice == 5:
             clear_screen()
             print("\n" + "═" * 60)
             print("Thank you for using the Memory Manager. Goodbye!".center(60))

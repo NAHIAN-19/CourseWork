@@ -1,67 +1,43 @@
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-# Load Dataset
-def load_data():
-    df = pd.read_csv("train.csv", usecols=["Survived", "Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked"])
-    df.dropna(inplace=True)  # Drop rows with missing values
-    return df
+# Load the Titanic dataset from a URL
+url = "https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv"
+data = pd.read_csv(url)
 
-# Preprocess Data
-def preprocess_data(df):
-    # Encode categorical variables
-    df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
-    df['Embarked'] = df['Embarked'].fillna('S')  # Fill missing 'Embarked' values with the most common value
-    df['Embarked'] = LabelEncoder().fit_transform(df['Embarked'])
+# Select relevant features and target variable
+features = ['Pclass', 'Sex', 'Age', 'Fare']
+X = data[features].copy()
+y = data['Survived']
 
-    # Define features and target
-    X = df.drop("Survived", axis=1)
-    y = df["Survived"]
+# Preprocess the data
+# Handle missing values in 'Age' column by filling with median
+X['Age'].fillna(X['Age'].median(), inplace=True)
+# Convert 'Sex' to numerical values (0 for male, 1 for female)
+X['Sex'] = X['Sex'].map({'male': 0, 'female': 1})
 
-    # Standardize features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+# Split the data into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    return train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+# Scale the features to have zero mean and unit variance
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# Build MLP Model
-def build_model(input_dim):
-    model = Sequential([
-        Dense(64, activation='relu', input_dim=input_dim),
-        Dropout(0.2),  # Dropout for regularization
-        Dense(32, activation='relu'),
-        Dense(1, activation='sigmoid')  # Binary classification
-    ])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    return model
+# Build and train the Multi-Layer Perceptron model
+# Architecture: 4 input neurons, 16 neurons in first hidden layer, 8 neurons in second hidden layer
+model = MLPClassifier(hidden_layer_sizes=(16, 8), max_iter=1000, random_state=42)
+model.fit(X_train_scaled, y_train)
 
-# Main Execution
-if __name__ == "__main__":
-    # Load and preprocess data
-    data = load_data()
-    X_train, X_test, y_train, y_test = preprocess_data(data)
+# Make predictions on the test set
+y_pred = model.predict(X_test_scaled)
 
-    # Build and train model
-    model = build_model(X_train.shape[1])
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-
-    history = model.fit(
-        X_train, y_train,
-        validation_split=0.2,
-        epochs=50,
-        batch_size=32,
-        callbacks=[early_stopping],
-        verbose=1  # Set to 1 for progress bar; 2 for epoch summaries
-    )
-
-    # Evaluate Model
-    loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-    print(f"Test Accuracy: {accuracy * 100:.2f}%")
-
-    # Save Model
-    model.save("titanic_mlp_model.h5")
+# Print results
+print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))

@@ -45,12 +45,30 @@ class MemoryManagerGUI:
         self.status_label = tk.Label(master, text="", fg="green")
         self.status_label.pack(pady=10)
 
+        self.algo_frame = tk.Frame(master)
+        self.algo_frame.pack(pady=10)
+        
+        self.algo_label = tk.Label(self.algo_frame, text="Algorithm:")
+        self.algo_label.grid(row=0, column=0, padx=5)
+        
+        self.algo_var = tk.StringVar(value="first_fit")
+        algorithms = [("First Fit", "first_fit"), ("Best Fit", "best_fit"), ("Worst Fit", "worst_fit")]
+        
+        for i, (text, value) in enumerate(algorithms):
+            rb = tk.Radiobutton(self.algo_frame, text=text, variable=self.algo_var, value=value, command=self.update_algorithm)
+            rb.grid(row=0, column=i+1, padx=5)
+            
+    def update_algorithm(self):
+        if self.manager:
+            self.manager.algorithm = self.algo_var.get()
+            self.status_label.config(text=f"Algorithm changed to {self.algo_var.get()} fit", fg="green")
+            
     def initialize_memory(self):
         try:
             size = int(self.init_entry.get())
             if size <= 0:
                 raise ValueError("Size must be positive")
-            self.manager = MemoryManager(size)
+            self.manager = MemoryManager(size,self.algo_var.get())
             self.allocate_button['state'] = tk.NORMAL
             self.deallocate_button['state'] = tk.NORMAL
             self.init_frame.pack_forget()  # Remove initialization frame
